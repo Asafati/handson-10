@@ -1,28 +1,44 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { JwtModule } from '@nestjs/jwt';
-import { AuthController } from './auth.controller';
-import { UserService } from 'src/user/user.service';
-import { AuthService } from './auth.service';
+import { APP_GUARD } from '@nestjs/core';
+import { JwtService } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { User } from 'src/user/user.entity';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { AuthModule } from './auth/auth.module';
+import { UserModule } from './user/user.module';
+import { AuthGuard } from './auth/auth.guard';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User]),
-    JwtModule.registerAsync({
+    ConfigModule.forRoot({ isGlobal: true }),
+    TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: async (ConfigService: ConfigService) => ({
-        global: true,
-        secret: ConfigService.get<string>('JWT_SECRET'),
-        signOptions: {
-          expiresIn: '1d',
-        },
+      useFactory: (configService: ConfigService) => ({
+        type: 'postgres',
+        host: configService.get<string>('POSTGRES_HOST'),
+        port: configService.get<string>('POSTGRES_PORT')
+          ? configService.get<number>('POSTGRES_PORT')
+          : 5432,
+        password: configService.get<string>('POSTGRES_PASSWORD'),
+        username: configService.get<string>('POSTGRES_USER'),
+        database: configService.get<string>('POSTGRES_DATABASE'),
+        migrations: ['dist/migrations/*.js'],
+        entities: [__dirname + '/**/*.entity{.ts,.js}'],
+        autoLoadEntities: true,
+        ssl: true,
       }),
     }),
+    AuthModule,
+    UserModule,
   ],
-  controllers: [AuthController],
-  providers: [UserService, AuthService]
+  controllers: [AppController],
+  providers: [
+    ConfigService,
+    JwtService,
+    { provide: APP_GUARD, useClass: AuthGuard },
+    AppService,
+  ],
 })
-export class AuthModule {}
+export class AppModule {}

@@ -16,4 +16,5 @@ export class CreatePostDTO {
   @IsNotEmpty()
   @ApiProperty()
   image_url: string;
+
 }

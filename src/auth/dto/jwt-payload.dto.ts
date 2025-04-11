@@ -1,7 +1,6 @@
-export class jwtPayload {
-  id: number;
-  email: string;
-  username: string;
-  iat?: number;
-  exp?: number;
+export class JwtPayloadDTO {
+    sub: number;
+    email: string;
+    iat?: number;
+    exp?: number;
 }
